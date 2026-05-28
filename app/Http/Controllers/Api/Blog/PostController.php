@@ -39,7 +39,7 @@ class PostController extends BaseController
     public function destroy(string $id)
     {
         $item = BlogPost::findOrFail($id);
-        $item->delete(); // Оскільки ми підключили SoftDeletes, запис просто приховається
+        $item->delete();
         return response()->json(['message' => 'Пост успішно видалено'], 200);
     }
 }
