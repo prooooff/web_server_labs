@@ -6,13 +6,25 @@ use App\Models\BlogCategory;
 use Illuminate\Support\Str;
 use App\Http\Requests\BlogCategoryUpdateRequest;
 use App\Http\Requests\BlogCategoryCreateRequest;
+// Зверху після use App\Models\BlogCategory; додаємо:
+use App\Repositories\BlogCategoryRepository;
 
 
 class CategoryController extends BaseController
 {
+
+    public function __construct(private BlogCategoryRepository $blogCategoryRepository)
+    {
+        //parent::__construct();
+    }
+
     public function index()
     {
-        $paginator = BlogCategory::orderBy('id', 'desc')->paginate(5);
+        // В методі index() коментуємо рядок: $paginator = BlogCategory::orderBy('id', 'desc')->paginate(5);
+        // додаємо рядок
+        // $paginator = BlogCategory::orderBy('id', 'desc')->paginate(5);
+        $paginator = $this->blogCategoryRepository->getAllWithPaginate(5);
+
         return $paginator;
     }
 
@@ -43,7 +55,8 @@ class CategoryController extends BaseController
 
     public function update(BlogCategoryUpdateRequest $request, string $id)
     {
-        $item = BlogCategory::find($id);
+        // Замінюємо частину коду метода update(): BlogCategory::find($id); на $this->blogCategoryRepository->getEdit($id);
+        $item = $this->blogCategoryRepository->getEdit($id);
 
         if (empty($item)) {
             return response()->json(['error' => "Запис id=[{$id}] не знайдено"], 404);
