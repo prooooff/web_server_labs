@@ -2,46 +2,33 @@
 
 namespace App\Http\Controllers\Api\Blog\Admin;
 
-use App\Http\Controllers\Controller;
+use App\Repositories\BlogPostRepository;
+use App\Http\Controllers\Api\Blog\BaseController;
 use Illuminate\Http\Request;
 
-class PostController extends Controller
+class PostController extends BaseController
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct(private BlogPostRepository $blogPostRepository)
     {
-        //
+        //parent::__construct();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    public function index()
+    {
+        $paginator = $this->blogPostRepository->getAllWithPaginate();
+        return response()->json($paginator->toArray());
+    }
+
     public function store(Request $request)
     {
         //
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         //

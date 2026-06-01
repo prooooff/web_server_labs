@@ -20,7 +20,6 @@ Route::group(['prefix' => 'blog'], function () {
 
 // Адмінка
 $groupData = [
-    'namespace' => 'App\Http\Controllers\Blog\Admin',
     'prefix' => 'admin/blog',
 ];
 
@@ -30,7 +29,6 @@ Route::group($groupData, function () {
     Route::apiResource('categories', CategoryController::class)
         ->only($methods)
         ->names('blog.admin.categories');
-
 
     Route::apiResource('posts', AdminPostController::class)
         ->except(['show'])
