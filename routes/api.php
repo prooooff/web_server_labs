@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Blog\PostController;
 use App\Http\Controllers\Blog\Admin\CategoryController;
 use App\Http\Controllers\Api\Blog\Admin\PostController as AdminPostController;
 
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
