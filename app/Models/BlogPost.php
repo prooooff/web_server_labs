@@ -10,16 +10,24 @@ class BlogPost extends Model
 {
     use HasFactory, SoftDeletes;
 
-    // Дозволяємо масове заповнення тільки для існуючих полів БД
     protected $fillable = [
-        'category_id',
-        'user_id',
-        'slug',
         'title',
+        'slug',
+        'category_id',
         'excerpt',
         'content_raw',
-        'content_html',
         'is_published',
         'published_at',
+        'user_id',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(BlogCategory::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
