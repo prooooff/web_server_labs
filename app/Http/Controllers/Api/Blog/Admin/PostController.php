@@ -2,101 +2,99 @@
 
 namespace App\Http\Controllers\Api\Blog\Admin;
 
-use App\Models\BlogPost;
-use App\Http\Requests\BlogPostCreateRequest;
-use App\Http\Requests\BlogPostUpdateRequest;
 use App\Repositories\BlogPostRepository;
 use App\Repositories\BlogCategoryRepository;
-use App\Http\Controllers\Api\Blog\BaseController;
+use App\Http\Requests\BlogPostUpdateRequest;
+use App\Http\Requests\BlogPostCreateRequest;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
+use App\Models\BlogPost;
 use App\Jobs\BlogPostAfterCreateJob;
 use App\Jobs\BlogPostAfterDeleteJob;
-use Illuminate\Http\Request;
 
 class PostController extends BaseController
 {
+    private BlogPostRepository $blogPostRepository;
+    private BlogCategoryRepository $blogCategoryRepository;
+
     public function __construct(
-        private BlogPostRepository $blogPostRepository,
-        private BlogCategoryRepository $blogCategoryRepository,
+        BlogPostRepository $blogPostRepository,
+        BlogCategoryRepository $blogCategoryRepository
     ) {
+        $this->blogPostRepository = $blogPostRepository;
+        $this->blogCategoryRepository = $blogCategoryRepository;
     }
 
     /**
-     * Список всіх статей
+     * Display a listing of the resource (Для адмінки потрібна пагінація).
      */
     public function index()
     {
+        // Використовуємо paginate, щоб працювала наша таблиця на Nuxt
         $paginator = $this->blogPostRepository->getAllWithPaginate();
-        return response()->json($paginator->toArray());
+
+        return response()->json($paginator);
     }
 
     /**
-     * Створення статті (Лабораторна 11 + 12)
+     * Store a newly created resource in storage.
      */
     public function store(BlogPostCreateRequest $request)
     {
         $data = $request->input();
+
         $item = (new BlogPost())->create($data);
 
         if ($item) {
-            // Лаб 12: Тригер черги після створення
-            $job = new BlogPostAfterCreateJob($item);
-            dispatch($job);
+            BlogPostAfterCreateJob::dispatch($item);
+            return ['success' => true, 'message' => 'Успішно збережено'];
+        }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Успішно збережено',
-                'data' => $item
-            ]);
-        } {
-        return response()->json(['message' => 'Помилка збереження'], 500);
-    }
+        return ['success' => false, 'message' => 'Помилка збереження'];
     }
 
     /**
-     * Оновлення статті
+     * Update the specified resource in storage.
      */
-    public function update(BlogPostUpdateRequest $request, string $id)
+    public function update(BlogPostUpdateRequest $request, $id)
     {
         $item = $this->blogPostRepository->getEdit($id);
+
         if (empty($item)) {
-            return response()->json(['message' => "Запис id=[{$id}] не знайдено"], 404);
+            return ['message' => "Запис id=[{$id}] не знайдено"];
         }
 
         $data = $request->all();
+
+        if (empty($data['slug'])) {
+            $data['slug'] = Str::slug($data['title']);
+        }
+
+        if (empty($item->published_at) && $data['is_published']) {
+            $data['published_at'] = Carbon::now();
+        }
+
         $result = $item->update($data);
 
         if ($result) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Успішно збережено',
-                'data' => $this->blogPostRepository->getEdit($id),
-            ]);
+            return ['success' => true, 'message' => 'Успішно збережено'];
         } else {
-            return response()->json(['message' => 'Помилка збереження'], 500);
+            return ['success' => false, 'message' => 'Помилка збереження'];
         }
     }
 
     /**
-     * Видалення статті (Лабораторна 11 + 12 із гарним JSON-респонсом)
+     * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        $result = BlogPost::destroy($id); // софт деліт
+        $result = BlogPost::destroy($id);
 
         if ($result) {
-            // Лаб 12: Надсилаємо задачу в чергу із затримкою 20 секунд
             BlogPostAfterDeleteJob::dispatch($id)->delay(20);
-
-            // Повертаємо зрозумілу відповідь замість порожнього []
-            return response()->json([
-                'success' => true,
-                'message' => "Статтю з id=[{$id}] успішно видалено (Soft Delete)"
-            ]);
+            return ['success' => true, 'message' => 'Статтю видалено'];
         } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Помилка видалення, запис не знайдено чи вже видалено'
-            ], 404);
+            return ['success' => false, 'message' => 'Помилка видалення'];
         }
     }
 }
