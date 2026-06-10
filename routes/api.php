@@ -7,7 +7,7 @@ use App\Http\Controllers\RestTestController;
 use App\Http\Controllers\Api\Blog\PostController;
 use App\Http\Controllers\Blog\Admin\CategoryController;
 use App\Http\Controllers\Api\Blog\Admin\PostController as AdminPostController;
-
+use App\Http\Controllers\DiggingDeeperController; // Додано для Лабораторної 13
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -34,4 +34,13 @@ Route::group($groupData, function () {
     Route::apiResource('posts', AdminPostController::class)
         ->except(['show'])
         ->names('blog.admin.posts');
+});
+
+// Лабораторна 13: Digging Deeper (Черги та Ланцюги завдань)
+Route::group(['prefix' => 'digging_deeper'], function () {
+    Route::get('process-video', [DiggingDeeperController::class, 'processVideo'])
+        ->name('digging_deeper.processVideo');
+
+    Route::get('prepare-catalog', [DiggingDeeperController::class, 'prepareCatalog'])
+        ->name('digging_deeper.prepareCatalog');
 });

@@ -4,10 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
 use Carbon\Carbon;
-
+use App\Jobs\ProcessVideoJob;
+use App\Jobs\GenerateCatalog\GenerateCatalogMainJob;
 
 class DiggingDeeperController extends Controller
 {
+    /**
+     * Базові методи роботи з колекціями
+     */
     public function collections()
     {
         $result = [];
@@ -47,7 +51,7 @@ class DiggingDeeperController extends Controller
         }
 
         $result['where_first'] = $collection
-            ->firstWhere('created_at', '>' , '2020-02-24 03:46:16');
+            ->firstWhere('created_at', '>', '2020-02-24 03:46:16');
 
         //Базова змінна не змінюється. Вертаємо змінену версію.
         $result['map']['all'] = $collection->map(function ($item) {
@@ -74,7 +78,7 @@ class DiggingDeeperController extends Controller
             return $newItem;
         });
 
-         dd($collection);
+        dd($collection);
 
         /* ====================================================================
 
@@ -113,5 +117,27 @@ class DiggingDeeperController extends Controller
         $sortedDescCollection = $collection->sortByDesc('item_id');
 
         // dd(compact('sortedSimpleCollection', 'sortedAscCollection', 'sortedDescCollection'));
+    }
+
+    /**
+     * Лабораторна 13: Черга для обробки відео
+     */
+    public function processVideo()
+    {
+        ProcessVideoJob::dispatch();
+
+        return response()->json(['message' => 'ProcessVideoJob відправлено у чергу']);
+    }
+
+    /**
+     * Лабораторна 13: Запуск ланцюга генерації каталогу
+     *
+     * @link http://localhost/api/digging_deeper/prepare-catalog
+     */
+    public function prepareCatalog()
+    {
+        GenerateCatalogMainJob::dispatch();
+
+        return response()->json(['message' => 'Ланцюг GenerateCatalog запущено!']);
     }
 }
