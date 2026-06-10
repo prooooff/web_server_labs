@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RestTestController;
-use App\Http\Controllers\Api\Blog\PostController;
 use App\Http\Controllers\DiggingDeeperController;
 
 Route::get('/', function () {
@@ -19,11 +17,12 @@ Route::middleware([
     })->name('dashboard');
 });
 
-Route::apiResource('rest', RestTestController::class)->names('restTest');
 
+/*
 Route::group(['prefix' => 'blog'], function () {
-    Route::apiResource('posts', PostController::class)->names('blog.posts');
+    Route::apiResource('posts', \App\Http\Controllers\Api\Blog\PostController::class)->names('blog.posts');
 });
+*/
 
 // Маршрут для тестування колекцій (DiggingDeeper)
 Route::group(['prefix' => 'digging_deeper'], function () {
