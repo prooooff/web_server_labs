@@ -23,9 +23,9 @@ $groupData = [
 ];
 
 Route::group($groupData, function () {
-    $methods = ['index', 'store', 'update'];
+
+    // Повний API-ресурс для категорій (тепер дозволені GET-запити на show та DELETE на destroy)
     Route::apiResource('categories', CategoryController::class)
-        ->only($methods)
         ->names('blog.admin.categories');
 
     Route::apiResource('posts', AdminPostController::class)

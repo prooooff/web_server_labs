@@ -37,6 +37,18 @@ class CategoryController extends BaseController
         }
     }
 
+    // Додано метод для отримання даних для форми редагування
+    public function show($id)
+    {
+        $item = $this->blogCategoryRepository->getEdit($id);
+
+        if (empty($item)) {
+            return response()->json(['message' => 'Запис не знайдено'], 404);
+        }
+
+        return new CategoryResource($item);
+    }
+
     public function update(BlogCategoryUpdateRequest $request, $id)
     {
         $item = $this->blogCategoryRepository->getEdit($id);
@@ -52,6 +64,18 @@ class CategoryController extends BaseController
             return ['success' => true, 'data' => $item];
         } else {
             return ['success' => false, 'message' => 'Помилка збереження'];
+        }
+    }
+
+    // Додано метод для видалення категорії з таблиці
+    public function destroy($id)
+    {
+        $result = BlogCategory::destroy($id);
+
+        if ($result) {
+            return ['success' => true, 'message' => "Категорію успішно видалено!"];
+        } else {
+            return ['success' => false, 'message' => "Помилка видалення"];
         }
     }
 }
