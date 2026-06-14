@@ -2,13 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Observers\BlogPostObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use App\Traits\Filterable; // 1. Трейт імпортовано
 
+#[ObservedBy([BlogPostObserver::class])]
 class BlogPost extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
+    use Filterable; // 2. Трейт підключено всередині класу
 
     const UNKNOWN_USER = 1;
 
@@ -20,7 +26,6 @@ class BlogPost extends Model
         'content_raw',
         'is_published',
         'published_at',
-        // 'user_id'
     ];
 
     public function category()

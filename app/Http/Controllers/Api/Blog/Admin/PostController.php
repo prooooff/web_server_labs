@@ -2,38 +2,40 @@
 
 namespace App\Http\Controllers\Api\Blog\Admin;
 
-use App\Repositories\BlogPostRepository;
-use App\Repositories\BlogCategoryRepository;
-use App\Http\Requests\BlogPostUpdateRequest;
 use App\Http\Requests\BlogPostCreateRequest;
-use Carbon\Carbon;
-use Illuminate\Support\Str;
+use App\Http\Requests\BlogPostUpdateRequest;
 use App\Models\BlogPost;
+use App\Repositories\BlogCategoryRepository;
+use App\Repositories\BlogPostRepository;
 use App\Jobs\BlogPostAfterCreateJob;
 use App\Jobs\BlogPostAfterDeleteJob;
+use Illuminate\Foundation\Bus\DispatchesJobs;
+use App\Http\Resources\Api\Blog\Admin\PostResource;
+use Illuminate\Http\Request;
 
 class PostController extends BaseController
 {
-    private BlogPostRepository $blogPostRepository;
-    private BlogCategoryRepository $blogCategoryRepository;
+    use DispatchesJobs;
 
     public function __construct(
-        BlogPostRepository $blogPostRepository,
-        BlogCategoryRepository $blogCategoryRepository
+        private BlogPostRepository $blogPostRepository,
+        private BlogCategoryRepository $blogCategoryRepository
     ) {
-        $this->blogPostRepository = $blogPostRepository;
-        $this->blogCategoryRepository = $blogCategoryRepository;
     }
 
-    /**
-     * Display a listing of the resource (Для адмінки потрібна пагінація).
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Використовуємо paginate, щоб працювала наша таблиця на Nuxt
-        $paginator = $this->blogPostRepository->getAllWithPaginate();
+        // Перехоплюємо динамічні параметри, які надсилає нам Nuxt
+        $perPage = $request->input('per_page');
+        $search = $request->input('search');
+        $sortBy = $request->input('sort_by', 'id');
+        $sortDir = $request->input('sort_dir', 'desc');
 
-        return response()->json($paginator);
+        // Передаємо параметри у репозиторій
+        $paginator = $this->blogPostRepository->getAllWithPaginate($perPage, $search, $sortBy, $sortDir);
+
+        // Обгортаємо пагінацію в API Ресурс Дарини
+        return PostResource::collection($paginator);
     }
 
     /**
@@ -46,11 +48,32 @@ class PostController extends BaseController
         $item = (new BlogPost())->create($data);
 
         if ($item) {
-            BlogPostAfterCreateJob::dispatch($item);
-            return ['success' => true, 'message' => 'Успішно збережено'];
+            $job = new BlogPostAfterCreateJob($item);
+            $this->dispatch($job);
+
+            return [
+                'success' => true,
+                'message' => 'Успішно збережено',
+                'data' => $item
+            ];
+        } else {
+            return ['msg' => 'Помилка збереження'];
+        }
+    }
+
+    /**
+     * Display the specified resource (Реалізовано для зчитування даних перед редагуванням).
+     */
+    public function show(string $id)
+    {
+        $item = $this->blogPostRepository->getEdit($id);
+
+        if (empty($item)) {
+            return response()->json(['message' => 'Запис не знайдено'], 404);
         }
 
-        return ['success' => false, 'message' => 'Помилка збереження'];
+        // Повертаємо через ресурс, щоб Nuxt отримав чистий об'єкт статті
+        return new PostResource($item);
     }
 
     /**
@@ -59,42 +82,43 @@ class PostController extends BaseController
     public function update(BlogPostUpdateRequest $request, $id)
     {
         $item = $this->blogPostRepository->getEdit($id);
-
         if (empty($item)) {
             return ['message' => "Запис id=[{$id}] не знайдено"];
         }
 
         $data = $request->all();
-
-        if (empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['title']);
-        }
-
-        if (empty($item->published_at) && $data['is_published']) {
-            $data['published_at'] = Carbon::now();
-        }
-
         $result = $item->update($data);
 
         if ($result) {
-            return ['success' => true, 'message' => 'Успішно збережено'];
+            return [
+                'success' => true,
+                'message' => 'Успішно збережено',
+                'data' => $item
+            ];
         } else {
-            return ['success' => false, 'message' => 'Помилка збереження'];
+            return ['message' => 'Помилка збереження'];
         }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(string $id)
     {
         $result = BlogPost::destroy($id);
 
         if ($result) {
             BlogPostAfterDeleteJob::dispatch($id)->delay(20);
-            return ['success' => true, 'message' => 'Статтю видалено'];
+
+            return [
+                'success' => true,
+                'message' => "Статтю з id [{$id}] успішно видалено!"
+            ];
         } else {
-            return ['success' => false, 'message' => 'Помилка видалення'];
+            return [
+                'success' => false,
+                'message' => "Помилка видалення або статтю вже було видалено"
+            ];
         }
     }
 }
