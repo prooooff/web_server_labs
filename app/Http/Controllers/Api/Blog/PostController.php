@@ -3,34 +3,68 @@
 namespace App\Http\Controllers\Api\Blog;
 
 use App\Models\BlogPost;
-use App\Http\Resources\PostCollection;
-use App\Http\Resources\Api\Blog\PostResource;
+use Illuminate\Http\Request;
+use App\Repositories\BlogPostRepository;
+use App\Http\Resources\Api\PostPublicResource; // Імпортуємо наш новий ресурс
 
 class PostController extends BaseController
 {
+    private $blogPostRepository;
+
+    public function __construct(BlogPostRepository $blogPostRepository)
+    {
+        $this->blogPostRepository = $blogPostRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Завантажуємо активні статті з їх категоріями та авторами
-        $items = BlogPost::with(['category', 'user'])
-            ->where('is_published', 1)
-            ->get();
+        $perPage = $request->query('per_page');
+        $search = $request->query('search');
 
-        // Повертаємо через Resource Collection (якщо він у вас вже створений)
-        return new PostCollection($items);
+        $paginator = $this->blogPostRepository->getPublishedWithPaginate($perPage, $search);
+        return PostPublicResource::collection($paginator);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        //
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        $item = BlogPost::with(['category', 'user'])
-            ->where('is_published', 1)
-            ->findOrFail($id);
+        $post = $this->blogPostRepository->getEdit($id);
 
-        return new PostResource($item);
+        if (!$post || !$post->is_published) {
+            return response()->json(['message' => 'Статтю не знайдено'], 404);
+        }
+
+        $post->load(['category:id,title', 'user:id,name']);
+
+        return new PostPublicResource($post);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        //
     }
 }
