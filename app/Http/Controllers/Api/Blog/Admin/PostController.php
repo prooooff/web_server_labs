@@ -10,7 +10,7 @@ use App\Repositories\BlogPostRepository;
 use App\Jobs\BlogPostAfterCreateJob;
 use App\Jobs\BlogPostAfterDeleteJob;
 use Illuminate\Foundation\Bus\DispatchesJobs;
-use App\Http\Resources\Api\PostResource; // <-- ЗМІНЕНО ТІЛЬКИ ЦЕЙ РЯДОК
+use App\Http\Resources\Api\PostResource;
 use Illuminate\Http\Request;
 
 class PostController extends BaseController
