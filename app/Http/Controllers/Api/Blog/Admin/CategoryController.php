@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Blog\Admin;
 
+use Illuminate\Support\Str;
 use App\Models\BlogCategory;
 use Illuminate\Http\Request;
 use App\Repositories\BlogCategoryRepository;
@@ -28,6 +29,9 @@ class CategoryController extends BaseController
     public function store(BlogCategoryCreateRequest $request)
     {
         $data = $request->input();
+        $data['parent_id'] = $data['parent_id'] ?? 0;
+        $data['slug'] = $data['slug'] ?: Str::slug($data['title']);
+
         $item = (new BlogCategory())->create($data);
 
         if ($item) {
@@ -37,7 +41,6 @@ class CategoryController extends BaseController
         }
     }
 
-    // Додано метод для отримання даних для форми редагування
     public function show($id)
     {
         $item = $this->blogCategoryRepository->getEdit($id);
@@ -58,6 +61,9 @@ class CategoryController extends BaseController
         }
 
         $data = $request->all();
+        $data['parent_id'] = $data['parent_id'] ?? 0;
+        $data['slug'] = $data['slug'] ?: Str::slug($data['title']);
+
         $result = $item->update($data);
 
         if ($result) {
@@ -67,15 +73,14 @@ class CategoryController extends BaseController
         }
     }
 
-    // Додано метод для видалення категорії з таблиці
     public function destroy($id)
     {
         $result = BlogCategory::destroy($id);
 
         if ($result) {
-            return ['success' => true, 'message' => "Категорію успішно видалено!"];
+            return ['success' => true, 'message' => 'Категорію успішно видалено!'];
         } else {
-            return ['success' => false, 'message' => "Помилка видалення"];
+            return ['success' => false, 'message' => 'Помилка видалення'];
         }
     }
 }
